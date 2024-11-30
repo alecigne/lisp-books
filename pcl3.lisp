@@ -1,31 +1,19 @@
+;;;; This chapter is actually about managing a 'lispy' DB in which records are
+;;;; plists. Only a few functions are about a CD collection.
+;;;;
+;;;; The update function is thus generalized to a macro, just like `where',
+;;;; because, hey, why not. Don't do this at home.
+
+;;; DB
+
 (defvar *db* nil)
 
-(defun make-cd (artist title rating ripped)
-  (list :artist artist :title title :rating rating :ripped ripped))
-
-(defun add-record (cd)
-  (push cd *db*))
+(defun add-record (rec)
+  (push rec *db*))
 
 (defun dump-db ()
-  (dolist (cd *db*)
-    (format t "~{~a:~10t~a~%~}~%" cd)))
-
-(defun prompt-read (prompt)
-  (format *query-io* "~a: " prompt)
-  (force-output *query-io*)
-  (read-line *query-io*))
-
-(defun prompt-cd ()
-  (make-cd
-   (prompt-read "Title")
-   (prompt-read "Artist")
-   (or (parse-integer (prompt-read "Rating") :junk-allowed t) 0)
-   (y-or-n-p "Ripped: ")))
-
-(defun add-cds ()
-  (loop
-    (add-record (prompt-for-cd))
-    (unless (y-or-n-p "Another?") (return))))
+  (dolist (rec *db*)
+    (format t "~{~a:~10t~a~%~}~%" rec)))
 
 (defun save-db (filename)
   (with-open-file (out filename :direction :output :if-exists :supersede)
@@ -43,26 +31,47 @@
 (defun select (selector-fn)
   (remove-if-not selector-fn *db*))
 
-(defun make-comparison-expr (field value)
-  `(equal (getf cd ,field) ,value))
-
-(defun make-comparisons (fields)
+(defun make-exps (exp-maker fields)
   (loop while fields
-        collecting (make-comparison-expr (pop fields) (pop fields))))
+        collecting (funcall exp-maker (pop fields) (pop fields))))
 
 (defmacro where (&rest clauses)
-  `#'(lambda (cd) (and ,@(make-comparisons clauses))))
+  (flet ((make-where-expr (field value)
+           `(equal (getf rec ,field) ,value)))
+    `#'(lambda (rec) (and ,@(make-exps #'make-where-expr clauses)))))
 
-(defun update (selector-fn &key title artist rating (ripped nil ripped-p))
-  (setf *db*
-        (mapcar
-         #'(lambda (row)
-             (when (funcall selector-fn row)
-               (if title    (setf (getf row :title)  title))
-               (if artist   (setf (getf row :artist) artist))
-               (if rating   (setf (getf row :rating) rating))
-               (if ripped-p (setf (getf row :ripped) ripped)))
-             row) *db*)))
+(defmacro update (selector-fn &rest clauses)
+  (flet ((make-update-expr (field value)
+           `(setf (getf rec ,field) ,value)))
+    `(setf *db* (mapcar
+                 #'(lambda (rec)
+                     (when (funcall ,selector-fn rec)
+                       ,@(make-exps #'make-update-expr clauses))
+                     row) *db*))))
 
 (defun delete-rows (selector-fn)
   (setf *db* (remove-if selector-fn *db*)))
+
+;;; User interaction
+
+(defun prompt-read (prompt)
+  (format *query-io* "~a: " prompt)
+  (force-output *query-io*)
+  (read-line *query-io*))
+
+;;; CDs
+
+(defun make-cd (artist title rating ripped)
+  (list :artist artist :title title :rating rating :ripped ripped))
+
+(defun prompt-cd ()
+  (make-cd
+   (prompt-read "Title")
+   (prompt-read "Artist")
+   (or (parse-integer (prompt-read "Rating") :junk-allowed t) 0)
+   (y-or-n-p "Ripped: ")))
+
+(defun add-cds ()
+  (loop
+    (add-record (prompt-for-cd))
+    (unless (y-or-n-p "Another?") (return))))
