@@ -7,6 +7,8 @@ Code written while reading Lisp books.
 :CREATED:  [2024-11-30 Sat 16:07]
 :END:
 
+Check the [[file:pcl/][pcl]] directory.
+
 - Chapter 3 :: Check it [[file:pcl/pcl3/pcl3.lisp][here]]. Note that the final solution is not the
   one of the book since I took the liberty to transform ~update~ into
   a macro. The result is... questionable :D Browse [[https://github.com/alecigne/lisp-books/blob/26e8734d9c73aa2067cca5e0dec640a62022cc8f/pcl3.lisp][this version]] for a
