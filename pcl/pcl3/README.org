@@ -1,9 +1,9 @@
 #+title: PCL3
 
-- [[bcbf0992038a00776847ef563f96e24da2981204][bcbf099]] :: Implement databse without macro.
+- [[https://github.com/alecigne/lisp-books/commit/bcbf0992038a00776847ef563f96e24da2981204][bcbf099]] :: Implement databse without macro.
 
-- [[77eee71b862492a38fe4c16441058eae9edb7a75][77eee71]] :: Making ~where~ a macro.
+- [[https://github.com/alecigne/lisp-books/commit/77eee71b862492a38fe4c16441058eae9edb7a75][77eee71]] :: Making ~where~ a macro.
 
-- [[6f6743b544b5cd3cfd175fc8b2dcf58b54092db4][6f6743b]] :: Making ~update~ a macro. Note that this final solution is
+- [[https://github.com/alecigne/lisp-books/commit/6f6743b544b5cd3cfd175fc8b2dcf58b54092db4][6f6743b]] :: Making ~update~ a macro. Note that this final solution is
   not the one from the book. The result might be questionable. Browse
   the previous version for a solution that's closer to the book.
