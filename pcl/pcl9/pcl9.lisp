@@ -2,11 +2,25 @@
   `(let ,(loop for n in names collect `(,n (gensym)))
      ,@body))
 
+(defvar *test-name* nil)
+
 (defun test-+ ()
-  (check
-    (= (+ 1 2) 3)
-    (= (+ 1 2 3) 6)
-    (= (+ -1 -3) -4)))
+  (let ((*test-name* 'test-+))
+    (check
+      (= (+ 1 2) 3)
+      (= (+ 1 2 3) 6)
+      (= (+ -1 -3) -4))))
+
+(defun test-* ()
+  (let ((*test-name* 'test-*))
+    (check
+      (= (* 2 2) 4)
+      (= (* 3 5) 15))))
+
+(defun test-arithmetic ()
+  (combine-results
+    (test-+)
+    (test-*)))
 
 (defmacro check (&body forms)
   `(combine-results
@@ -19,5 +33,5 @@
        ,result)))
 
 (defun report-result (result form)
-  (format t "~:[FAIL~;pass~] ... ~a~%" result form)
+  (format t "~:[FAIL~;pass~] ... ~a: ~a~%" result *test-name* form)
   result)
