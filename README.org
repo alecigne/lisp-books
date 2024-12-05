@@ -2,8 +2,8 @@
 
 Code written while reading Lisp books.
 
-- Common Lisp: A Gentle Introduction to Symbolic Computation -> [[file:agitsc/][agitsc]]
-- Land of Lisp -> [[file:lol/][lol]]
-- On Lisp -> [[file:onlisp/][onlisp]]
-- Paradigms of AI Programming -> [[file:paip/][paip]]
+- [[https://www.cs.cmu.edu/~dst/LispBook/][Common Lisp: A Gentle Introduction to Symbolic Computation]] -> [[file:agitsc/][agitsc]]
+- [[http://landoflisp.com/][Land of Lisp]] -> [[file:lol/][lol]]
+- [[https://paulgraham.com/onlisp.html][On Lisp]] -> [[file:onlisp/][onlisp]]
+- [[https://github.com/norvig/paip-lisp][Paradigms of AI Programming]] -> [[file:paip/][paip]]
 - [[https://gigamonkeys.com/book/][Practical Common Lisp]] -> [[file:pcl/][pcl]]
