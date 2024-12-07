@@ -1,6 +1,16 @@
 #+title: PCL3
 
-- [[https://github.com/alecigne/lisp-books/commit/bcbf0992038a00776847ef563f96e24da2981204][bcbf099]] :: Implement databse without macro.
+- [[https://github.com/alecigne/lisp-books/commit/bcbf0992038a00776847ef563f96e24da2981204][bcbf099]] :: Implement database without macro.
+
+  A good example of why the ~with-standard-io-syntax~ is useful:
+
+  #+begin_src lisp
+    (let ((list '(1 2 3 4 5 6 7 8 9 10))
+          (*print-length* 5))
+      (print list)
+      (with-standard-io-syntax
+        (print list)))
+  #+end_src
 
 - [[https://github.com/alecigne/lisp-books/commit/77eee71b862492a38fe4c16441058eae9edb7a75][77eee71]] :: Making ~where~ a macro.
 
