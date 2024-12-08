@@ -2,11 +2,13 @@
 
 Code written while reading Lisp books.
 
-Some of this code depends on [[https://github.com/alecigne/cl-utils][cl-utils]], a personal collection of Common
-Lisp utilities.
-
 - [[https://www.cs.cmu.edu/~dst/LispBook/][Common Lisp: A Gentle Introduction to Symbolic Computation]] -> [[file:agitsc/][agitsc]]
 - [[http://landoflisp.com/][Land of Lisp]] -> [[file:lol/][lol]]
 - [[https://paulgraham.com/onlisp.html][On Lisp]] -> [[file:onlisp/][onlisp]]
 - [[https://github.com/norvig/paip-lisp][Paradigms of AI Programming]] -> [[file:paip/][paip]]
 - [[https://gigamonkeys.com/book/][Practical Common Lisp]] -> [[file:pcl/][pcl]]
+
+Some of this code might depends on [[https://github.com/alecigne/cl-utils][cl-utils]], a personal collection of
+Common Lisp utilities. Some projects might also depend from other
+chapters. For example, [[file:agitsc/agitsc14/][agitsc14]] depends on the unit test framework
+developed from scratch in [[file:pcl/pcl9/][pcl9]] 🙂
