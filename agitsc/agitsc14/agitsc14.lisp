@@ -1,6 +1,6 @@
 (defpackage :agitsc14
   (:use :cl)
-  (:import-from :pcl9 :check))
+  (:import-from :pcl9 :check :deftest))
 
 (in-package :agitsc14)
 
@@ -126,8 +126,53 @@
 (defmacro set-nil (var)
   `(setf ,var nil))
 
-(check
-  (let ((x 2))
-    (set-nil x)
-    (not x)))
+(deftest ex14.3-set-nil ()
+  (check
+    (let ((x 2)) (set-nil x) (not x))))
 
+;;; Ex. 14.4
+;;;
+;;; Write a macro called SIMPLE-ROTATEF that switches the value of two
+;;; variables. For example, if A is two and B is seven, then (SIMPLE-ROTATEF A
+;;; B) should make A seven and B two. Obviously, setting A to B first, and then
+;;; setting B to A won’t work. Your macro should expand into a LET expression
+;;; that holds on to the original values of the two variables and then assigns
+;;; them their new values in its body
+
+(defmacro simple-rotatef (var1 var2)
+  (let ((tmp (gensym)))
+    `(let ((,tmp ,var1))
+       (setf ,var1 ,var2)
+       (setf ,var2 ,tmp))))
+
+(deftest ex14.4-simple-rotatef ()
+  (check
+    (let ((x 2) (y 7) (expected '(7 2)))
+      (equal (progn (simple-rotatef x y) (list x y)) expected))
+    (let ((tmp 2) (y 7) (expected '(7 2)))
+      (equal (progn (simple-rotatef tmp y) (list tmp y)) expected))))
+
+;; For the sake of simplicity, the version from the book is:
+;;
+;; (defmacro simple-rotatef (var1 var2)
+;;   `(let ((temp1 ,var1)
+;;          (temp2 ,var2))
+;;      (setf ,var1 temp2)
+;;      (setf ,var2 temp1)))
+;;
+;; But it wouldn't work for:
+;;
+;; (let ((temp1 2)
+;;       (temp2 7))
+;;   (simple-rotatef temp1 temp2)
+;;   (values temp1 temp2))
+;;
+;; => 2, 7
+
+;;; Chapter tests
+
+(deftest test-chapter-14 ()
+  (ex14.3-set-nil)
+  (ex14.4-simple-rotatef))
+
+(test-chapter-14)
