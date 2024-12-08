@@ -1,0 +1,109 @@
+#+title: AGITSC14
+
+A few words about the PPMX tool. First, the final macro:
+
+#+begin_src lisp :results none
+  (defmacro ppmx (form)
+    "Pretty prints the macro expansion of FORM."
+    `(let* ((exp1 (macroexpand-1 ',form))
+            (exp (macroexpand exp1))
+            (*print-circle* nil))
+       (cond ((equal exp exp1)
+              (format t "~&Macro expansion:")
+              (pprint exp))
+             (t (format t "~&First step of expansion:")
+                (pprint exp1)
+                (format t "~%~%Final expansion:")
+                (pprint exp)))
+       (format t "~%~%")
+       (values)))
+#+end_src
+
+~macroexpand-1~ expands a macro only once, and ~macroexpand~ expands
+it even more. ~combine-results~ and ~check~ from [[file:../../pcl/pcl9/][pcl9]] are a good
+example:
+
+#+begin_src lisp :results none
+  (defmacro with-gensyms ((&rest names) &body body)
+    `(let ,(loop for n in names collect `(,n (gensym)))
+       ,@body))
+
+  (defmacro combine-results (&body forms)
+    (with-gensyms (result)
+      `(let ((,result t))
+         ,@(loop for f in forms collect `(unless ,f (setf ,result nil)))
+         ,result)))
+
+  (defmacro check (&body forms)
+    `(combine-results
+       ,@(loop for f in forms collect `(report-result ,f ',f))))
+#+end_src
+
+~check~ is a macro that calls another macro, ~combine-results~. With
+~macroexpand-1~, it is expanded once:
+
+#+begin_src lisp :results verbatim
+  (macroexpand-1 '(check (= 2 2)))
+#+end_src
+
+#+begin_src lisp
+  (COMBINE-RESULTS
+    (REPORT-RESULT (= 2 2) '(= 2 2)))
+#+end_src
+
+But with ~macroexpand~, the top level call to the ~combine-results~
+macro is also expanded:
+
+#+begin_src lisp :results verbatim
+  (macroexpand '(check (= 2 2)))
+#+end_src
+
+#+begin_src lisp
+  (LET ((#:G289 T))
+    (UNLESS (REPORT-RESULT (= 2 2) '(= 2 2)) (SETF #:G289 NIL))
+    #:G289)
+#+end_src
+
+~ppmx~ simply compares the result of these two macros and either print
+the expansion if it's already the final one, or the first and "last"
+step if it's not.
+
+Note that ~macroexpand~ doesn't really /fully/ expand a macro. For
+one, it didn't expand ~unless~ above. And if we define another ~check~
+macro with a useless top-level ~progn~:
+
+#+begin_src lisp :results none
+  (defmacro check2 (&body forms)
+    `(progn
+       (combine-results
+         ,@(loop for f in forms collect `(report-result ,f ',f)))))
+#+end_src
+
+...then ~combine-results~ won't be expanded anymore:
+
+#+begin_src lisp :results verbatim
+  (macroexpand '(check2 (= 2 2)))
+#+end_src
+
+#+begin_src lisp
+  (PROGN
+    (COMBINE-RESULTS
+      (REPORT-RESULT (= 2 2) '(= 2 2))))
+#+end_src
+
+To really, /fully/ expand a macro in SBCL, there is
+~sb-walker:macroexpand-all~, for example.
+
+#+begin_src lisp :results verbatim
+  (sb-walker:macroexpand-all '(check (= 2 2)))
+#+end_src
+
+#+begin_src lisp
+  (LET ((#:G304 T))
+    (IF (REPORT-RESULT (= 2 2) '(= 2 2))
+        NIL
+        (SETQ #:G304 NIL))
+    #:G304)
+#+end_src
+
+Isn't that neat?
