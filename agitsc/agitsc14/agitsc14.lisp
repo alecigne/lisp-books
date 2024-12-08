@@ -1,5 +1,8 @@
 (defpackage :agitsc14
-  (:use :cl))
+  (:use :cl)
+  (:import-from
+   :pcl9
+   :check))
 
 (in-package :agitsc14)
 
@@ -104,7 +107,14 @@
 ;;   'STARSHIP-CONDITION))
 
 ;;; Ex. 14.3
+;;;
 ;;; Write a SET-NIL macro that sets a variable to NIL.
 
 (defmacro set-nil (var)
   `(setf ,var nil))
+
+(check
+  (let ((x 2))
+    (set-nil x)
+    (not x)))
+

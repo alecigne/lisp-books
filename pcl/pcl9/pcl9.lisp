@@ -1,5 +1,6 @@
 (defpackage :pcl9
-  (:use :cl))
+  (:use :cl)
+  (:export :check :deftest))
 
 (in-package :pcl9)
 
