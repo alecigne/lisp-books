@@ -2,6 +2,9 @@
 
 Code written while reading Lisp books.
 
+Some of this code depends on [[https://github.com/alecigne/cl-utils][cl-utils]], a personal collection of Common
+Lisp utilities.
+
 - [[https://www.cs.cmu.edu/~dst/LispBook/][Common Lisp: A Gentle Introduction to Symbolic Computation]] -> [[file:agitsc/][agitsc]]
 - [[http://landoflisp.com/][Land of Lisp]] -> [[file:lol/][lol]]
 - [[https://paulgraham.com/onlisp.html][On Lisp]] -> [[file:onlisp/][onlisp]]

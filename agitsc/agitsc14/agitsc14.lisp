@@ -3,35 +3,22 @@
 
 (in-package :agitsc14)
 
-(defmacro ppmx (form)
-  "Pretty prints the macro expansion of FORM."
-  `(let* ((exp1 (macroexpand-1 ',form))
-          (exp (macroexpand exp1))
-          (*print-circle* nil))
-     (cond ((equal exp exp1)
-            (format t "~&Macro expansion:")
-            (pprint exp))
-           (t (format t "~&First step of expansion:")
-              (pprint exp1)
-              (format t "~%~%Final expansion:")
-              (pprint exp)))
-     (format t "~%~%")
-     (values)))
+;;; Ex. 14.1
 
-;;; Ex. 14-1
-
-(ppmx (pop x))
+(defun ex14.1 ()
+  (cl-utils:ppmx (pop x)))
 
 ;; Macro expansion:
 ;; (LET* ((#:LIST X) (#:CAR (CAR #:LIST)) (#:NEW327 (CDR #:LIST)))
 ;;   (SETQ X #:NEW327)
 ;;   #:CAR)
 
-;;; Ex. 14-2
+;;; Ex. 14.2
 
-(ppmx (defstruct starship
-        (name nil)
-        (condition ’green)))
+(defun ex14.2 ()
+  (cl-utils:ppmx (defstruct starship
+                   (name nil)
+                   (condition ’green))))
 
 ;; Jesus!
 ;;

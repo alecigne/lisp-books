@@ -3,10 +3,6 @@
 
 (in-package :pcl9)
 
-(defmacro with-gensyms ((&rest names) &body body)
-  `(let ,(loop for n in names collect `(,n (gensym)))
-     ,@body))
-
 (defvar *test-name* nil)
 
 (defun report-result (result form)
@@ -14,7 +10,7 @@
   result)
 
 (defmacro combine-results (&body forms)
-  (with-gensyms (result)
+  (cl-utils:with-gensyms (result)
     `(let ((,result t))
        ,@(loop for f in forms collect `(unless ,f (setf ,result nil)))
        ,result)))
