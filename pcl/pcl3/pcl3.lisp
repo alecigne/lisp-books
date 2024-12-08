@@ -4,6 +4,11 @@
 ;;;; The update function is thus generalized to a macro, just like `where',
 ;;;; because, hey, why not. Don't do this at home.
 
+(defpackage :pcl3
+  (:use :cl))
+
+(in-package :pcl3)
+
 ;;; DB
 
 (defvar *db* nil)
