@@ -1,0 +1,69 @@
+#+title: PCL15
+
+The code in this chapter was the basis for [[https://edicl.github.io/cl-fad/][=CL-FAD=]].
+
+* Feature expressions
+:PROPERTIES:
+:CREATED:  [2024-12-18 Wed 21:54]
+:END:
+
+- Feature:
+
+  #+begin_quote
+  An aspect or attribute of Common Lisp, of the implementation, or of
+  the environment. A symbol that names a feature. ([[http://clhs.lisp.se/Body/26_glo_f.htm#feature][source]])
+  #+end_quote
+
+- The ~*FEATURES*~ variable contains the symbols that name the
+  features. All implementations include at least one symbol that
+  indicates what implementation it is.
+
+  + ~:allegro~ :: Allegro Common Lisp
+  + ~:clisp~   :: CLISP
+  + ~:sbcl~    :: SBCL
+  + ~:cmu~     :: CMUCL
+
+- Feature expression:
+
+  #+begin_quote
+  A boolean combination of features used by the #+ and #- reader
+  macros in order to direct conditional reading of expressions by the
+  Lisp reader. ([[http://clhs.lisp.se/Body/26_glo_f.htm#feature_expression][source]])
+  #+end_quote
+
+  Examples of feature expressions:
+
+  #+begin_src lisp :results output verbatim
+    (let ((lisp #+sbcl "SBCL" #-sbcl "A Lisp"))
+      (format t "~a is used here" lisp))
+  #+end_src
+
+  #+begin_src lisp :results output verbatim
+    (let ((lisp #+(or allegro clisp sbcl cmu) "A famous Lisp"
+                #-(or allegro clisp sbcl cmu) "Another Lisp"))
+      (format t "~a is used here" lisp))
+  #+end_src
+
+  #+RESULTS:
+  : A famous Lisp is used here
+
+- When a feature expression following a =#+= is true, the reader reads
+  the next expression normally. Otherwise it skips the next
+  expression, treating it as whitespace. #- works the same way except
+  it reads the form if the feature expression is false and skips it if
+  it's true.
+
+- There's a package called [[https://www.cliki.net/trivial-features][=trivial-features=]] that ensures "consistent
+  ~*FEATURES*~ across multiple Common Lisp implementations".
+
+* =list-directory=
+:PROPERTIES:
+:CREATED:  [2024-12-18 Wed 21:55]
+:END:
+
+#+begin_src lisp :result value verbatim
+  (make-pathname :name :wild :type :wild :defaults "/home/alc")
+#+end_src
+
+#+RESULTS:
+: #P"/home/*.*"
