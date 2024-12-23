@@ -1,0 +1,425 @@
+#+title: PCL14 - Files and File I/O
+
+* Reading data
+:PROPERTIES:
+:CREATED:  [2024-12-22 Sun 16:05]
+:END:
+
+** Basics
+:PROPERTIES:
+:CREATED:  [2024-12-23 Mon 13:17]
+:END:
+
+By default, ~open~ will create an input stream of characters from a
+file:
+
+#+begin_src lisp :results output
+  (let ((in (open "reading.txt")))
+    (format t "~a" (read-line in))
+    (close in))
+#+end_src
+
+#+RESULTS:
+: this
+
+** Handling non-existent files
+:PROPERTIES:
+:CREATED:  [2024-12-23 Mon 13:17]
+:END:
+
+#+begin_src lisp :results none
+  (let ((in (open "not-a-file.txt" :if-does-not-exist nil)))
+    (when in
+      (format t "~a" (read-line in))
+      (close in)))
+#+end_src
+
+** Handling EOF
+:PROPERTIES:
+:CREATED:  [2024-12-23 Mon 13:18]
+:END:
+
+The ~read~ family's default behavior is to signal an error when
+reaching EOF. Passing ~nil~ will deactivate this behavior:
+
+#+begin_src lisp :results output
+  (let ((in (open "reading.txt")))
+    (loop for line = (read-line in nil) while line do (format t "~a~%" line))
+    (close in))
+#+end_src
+
+#+RESULTS:
+: this
+: is
+: a
+: text
+: file
+
+** Reading sexps
+:PROPERTIES:
+:CREATED:  [2024-12-23 Mon 13:19]
+:END:
+
+#+begin_src lisp :results output
+  (let ((in (open "sexps.txt")))
+    (loop for sexp = (read in nil) while sexp do (format t "~a~%" sexp))
+    (close in))
+#+end_src
+
+#+RESULTS:
+: (1 2 3)
+: 456
+: a string
+: ((A B) (C D))
+
+** Reading binary data
+:PROPERTIES:
+:CREATED:  [2024-12-23 Mon 13:19]
+:END:
+
+#+begin_src lisp :results output
+  (let ((in (open "reading.txt" :element-type '(unsigned-byte 8))))
+    (loop for byte = (read-byte in nil) while byte do (format t "~a " byte))
+    (close in))
+#+end_src
+
+#+RESULTS:
+: 116 104 105 115 10 105 115 10 97 10 116 101 120 116 10 102 105 108 101 10
+
+* Writing data
+:PROPERTIES:
+:CREATED:  [2024-12-22 Sun 16:42]
+:END:
+
+** Basics
+:PROPERTIES:
+:CREATED:  [2024-12-23 Mon 13:09]
+:END:
+
+An output stream is obtained by calling ~open~ with ~:direction
+:output~.
+
+#+begin_src lisp :results none
+  (let ((in (open "writing.txt" :direction :output)))
+    ;; do something here
+    (close in))
+#+end_src
+
+If the file already exists, an error will be thrown:
+
+#+begin_src lisp :results none
+  (open "writing.txt" :direction :output)
+#+end_src
+
+** Handling pre-existent files
+:PROPERTIES:
+:CREATED:  [2024-12-23 Mon 13:08]
+:END:
+
+~:if-exists~ controls the behavior of ~open~ when a file already
+exists. We will use ~write-line~ as an example here.
+
+~:supersede~ will replace the target file:
+
+#+begin_src lisp :results none
+  (let ((in (open "writing.txt" :direction :output :if-exists :supersede)))
+    (dolist (line '("this" "is" "another" "text" "file"))
+      (write-line line in))
+    (close in))
+#+end_src
+
+~:append~ will add content at the end of the file:
+
+#+begin_src lisp :results none
+  (let ((in (open "writing.txt" :direction :output :if-exists :append)))
+    (write-line "." in)
+    (close in))
+#+end_src
+
+~:overwrite~ will overwrite existing data starting from the beginning
+of the file:
+
+#+begin_src lisp :results none
+  (let ((in (open "writing.txt" :direction :output :if-exists :overwrite)))
+    (write-line "that" in)
+    (close in))
+#+end_src
+
+~nil~ will simply returns ~nil~ instead of a stream if the file
+already exists:
+
+#+begin_src lisp :results none
+  (let ((in (open "writing.txt" :direction :output :if-exists nil)))
+    (when in
+      (write-line "Nothing will happen" in)
+      (close in)))
+#+end_src
+
+** Binary data
+:PROPERTIES:
+:CREATED:  [2024-12-23 Mon 13:08]
+:END:
+
+#+begin_src lisp :results none
+  (let ((in (open "writing.txt"
+                  :direction :output
+                  :if-exists :append
+                  :element-type '(unsigned-byte 8))))
+    (dolist (byte '(;; this
+                    116 104 105 115 10
+                    ;; is
+                    105 115 10
+                    ;; a
+                    97 10
+                    ;; text
+                    116 101 120 116 10
+                    ;; file
+                    102 105 108 101 10))
+      (write-byte byte in))
+    (close in))
+#+end_src
+
+** ~fresh-line~ and ~terpri~
+:PROPERTIES:
+:CREATED:  [2024-12-23 Mon 13:08]
+:END:
+
+#+begin_src lisp :results output
+  (let ((newline-emitted))
+    (write-string "hello without newline")
+    (setf newline-emitted (fresh-line))
+    (write-line "hello again on a new line")
+    (when newline-emitted (write-line "a newline was emitted!")))
+#+end_src
+
+#+RESULTS:
+: hello without newline
+: hello again on a new line
+: a newline was emitted!
+
+#+begin_src lisp :results output
+  (let ((newline-emitted))
+    (write-string "hello with newline")
+    (terpri)
+    (setf newline-emitted (fresh-line))
+    (write-line "hello again on a new line")
+    (when newline-emitted (write-line "a newline was emitted!")))
+#+end_src
+
+#+RESULTS:
+: hello with newline
+: hello again on a new line
+
+** The ~print~ "family"
+:PROPERTIES:
+:CREATED:  [2024-12-23 Mon 13:20]
+:END:
+
+- ~prin1~ produces output suitable for input to read.
+
+- ~print~ is just like prin1 except that the printed representation of
+  object is preceded by a newline and followed by a space.
+
+- ~princ~ is just like prin1 except that the output has no escape
+  characters. princ is intended to look good to people, while output
+  from prin1 is intended to be acceptable for the function read.
+
+- ~pprint~ produces pretty output.
+
+There is also the variable ~*PRINT-READABLY*~.
+
+* Closing files
+:PROPERTIES:
+:CREATED:  [2024-12-23 Mon 13:21]
+:END:
+
+This code has two issues:
+
+#+begin_src lisp :results output
+  (let ((in (open "reading.txt")))
+    (format t "~a" (read-line in))
+    (close in))
+#+end_src
+
+- ~close~ might be forgotten
+
+- ~close~ might be unreachable
+
+We can use ~unwind-protect~ to reach ~close~ in case there is an
+error:
+
+#+begin_src lisp :results output
+  (let ((in (open "reading.txt")))
+    (unwind-protect
+         (format t "~a" (read-line in))
+      (close in)))
+#+end_src
+
+#+RESULTS:
+: this
+
+The ~with-open-file~ macro does more or less this for us:
+
+#+begin_src lisp :results output
+  (with-open-file (in "reading.txt")
+    (format t "~a~%" (read-line in)))
+#+end_src
+
+#+RESULTS:
+: this
+
+#+begin_src lisp :results value verbatim
+  (macroexpand-1 '(with-open-file (in "reading.txt")
+                   (format t "~a~%" (read-line in))))
+#+end_src
+
+#+RESULTS:
+: (LET ((IN (OPEN "reading.txt")) (#:G286 T))
+:   (UNWIND-PROTECT
+:       (MULTIPLE-VALUE-PROG1 (PROGN (FORMAT T "~a~%" (READ-LINE IN)))
+:         (SETQ #:G286 NIL))
+:     (WHEN IN (CLOSE IN :ABORT #:G286))))
+: T
+
+Simplifying:
+
+#+begin_src lisp :results output
+  (let ((in (open "reading.txt"))
+        (aborting t))
+    (unwind-protect
+         (multiple-value-prog1 (format t "~a~%" (read-line in))
+           (setq aborting nil))
+      (when in (close in :abort aborting))))
+#+end_src
+
+#+RESULTS:
+: this
+
+~multiple-value-prog1~ will force the return value to be that of the
+first Lisp form. About ~:abort~:
+
+#+begin_quote
+If abort is true, an attempt is made to clean up any side effects of
+having created stream. If stream performs output to a file that was
+created when the stream was created, the file is deleted and any
+previously existing file is not superseded.
+#+end_quote
+
+* Pathnames
+:PROPERTIES:
+:CREATED:  [2024-12-23 Mon 14:47]
+:END:
+
+A /namestring/ is tied to a particular OS and filesystem. Pathnames
+are not.
+
+Pathname designators:
+
+- Namestrings
+- Pathnames
+- Streams
+
+A pathname is a structured object that represents a filename using six
+components: host, device, directory, name, type, and version.
+
+#+begin_src lisp :results output
+  (let ((p (pathname "/home/alc/src/lisp-books/pcl/pcl14/README.org")))
+    (dolist (component (list (pathname-host p)
+                             (pathname-device p)
+                             (pathname-directory p)
+                             (pathname-name p)
+                             (pathname-type p)
+                             (pathname-version p)
+                             (namestring p)
+                             (directory-namestring p)
+                             (file-namestring p)))
+      (format t "~a~%" component)))
+#+end_src
+
+#+RESULTS:
+: #<UNIX-HOST {100000D653}>
+: NIL
+: (ABSOLUTE home alc src lisp-books pcl pcl14)
+: README
+: org
+: NEWEST
+: /home/alc/src/lisp-books/pcl/pcl14/README.org
+: /home/alc/src/lisp-books/pcl/pcl14/
+: README.org
+
+Building a pathname:
+
+#+begin_src lisp
+  (make-pathname
+   :directory '(:absolute "home" "alc" "src" "lisp-books" "pcl" "pcl14")
+   :name "README"
+   :type "org")
+#+end_src
+
+#+RESULTS:
+: #P"/home/alc/src/lisp-books/pcl/pcl14/README.org"
+
+Not a good idea though because filenames have many ways to be
+unportable. It's better to build it from an existing pathname:
+
+#+begin_src lisp
+  ;; p would come from the user, for example
+  (let ((p (pathname "/home/alc/src/lisp-books/pcl/pcl14/README.org")))
+    (make-pathname :type "html" :defaults p))
+#+end_src
+
+#+RESULTS:
+: #P"/home/alc/src/lisp-books/pcl/pcl14/README.html"
+
+To merge pathnames:
+
+#+begin_src lisp :results verbatim
+  (values
+   (merge-pathnames #p"foo/bar.html" #p"/www/html/")
+   (merge-pathnames #p"foo/bar.html" #p"html/")
+   (enough-namestring #p"/www/html/foo/bar.html" #p"/www/")
+   (merge-pathnames
+    (enough-namestring #p"/www/html/foo/bar/baz.html" #p"/www/")
+    #p"/www-backups/"))
+#+end_src
+
+#+RESULTS:
+: #P"/www/html/foo/bar.html", #P"html/foo/bar.html", "html/foo/bar.html", #P"/www-backups/html/foo/bar/baz.html"
+
+~*DEFAULT-PATHNAME-DEFAULTS*~ is used internally to complete partial
+pathnames:
+
+#+begin_src lisp
+  (merge-pathnames #p"foo.lisp")
+#+end_src
+
+#+RESULTS:
+: #P"/home/alc/src/lisp-books/pcl/pcl14/foo.lisp"
+
+Careful! On Windows and Unix, =/home/alc= and =/home/alc= are the same
+thing (a directory), but the pathname won't be the same.
+
+#+begin_src lisp
+  (let ((user-supplied-name "/home/alc"))
+    (make-pathname :name "foo"
+                   :type "txt"
+                   :defaults (pathname user-supplied-name)))
+#+end_src
+
+#+RESULTS:
+: #P"/home/foo.txt"
+
+#+begin_src lisp
+  (let ((user-supplied-name "/home/alc/"))
+    (make-pathname :name "foo"
+                   :type "txt"
+                   :defaults (pathname user-supplied-name)))
+#+end_src
+
+#+RESULTS:
+: #P"/home/alc/foo.txt"
+
+* Interacting with the File System
+:PROPERTIES:
+:CREATED:  [2024-12-23 Mon 15:29]
+:END:
