@@ -1,0 +1,207 @@
+#+title: PCL15
+
+The code in this chapter was the basis for [[https://edicl.github.io/cl-fad/][=CL-FAD=]].
+
+* Feature expressions
+:PROPERTIES:
+:CREATED:  [2024-12-18 Wed 21:54]
+:END:
+
+- Feature:
+
+  #+begin_quote
+  An aspect or attribute of Common Lisp, of the implementation, or of
+  the environment. A symbol that names a feature. ([[http://clhs.lisp.se/Body/26_glo_f.htm#feature][source]])
+  #+end_quote
+
+- The ~*FEATURES*~ variable contains the symbols that name the
+  features. All implementations include at least one symbol that
+  indicates what implementation it is.
+
+  + ~:allegro~ :: Allegro Common Lisp
+  + ~:clisp~   :: CLISP
+  + ~:sbcl~    :: SBCL
+  + ~:cmu~     :: CMUCL
+
+- Feature expression:
+
+  #+begin_quote
+  A boolean combination of features used by the #+ and #- reader
+  macros in order to direct conditional reading of expressions by the
+  Lisp reader. ([[http://clhs.lisp.se/Body/26_glo_f.htm#feature_expression][source]])
+  #+end_quote
+
+  Examples of feature expressions:
+
+  #+begin_src lisp :results output verbatim
+    (let ((lisp #+sbcl "SBCL" #-sbcl "A Lisp"))
+      (format t "~a is used here" lisp))
+  #+end_src
+
+  #+begin_src lisp :results output verbatim
+    (let ((lisp #+(or allegro clisp sbcl cmu) "A famous Lisp"
+                #-(or allegro clisp sbcl cmu) "Another Lisp"))
+      (format t "~a is used here" lisp))
+  #+end_src
+
+  #+RESULTS:
+  : A famous Lisp is used here
+
+- When a feature expression following a =#+= is true, the reader reads
+  the next expression normally. Otherwise it skips the next
+  expression, treating it as whitespace. #- works the same way except
+  it reads the form if the feature expression is false and skips it if
+  it's true.
+
+- There's a package called [[https://www.cliki.net/trivial-features][=trivial-features=]] that ensures "consistent
+  ~*FEATURES*~ across multiple Common Lisp implementations".
+
+* Listing a directory
+:PROPERTIES:
+:CREATED:  [2024-12-18 Wed 21:55]
+:END:
+
+Let's start with the fundamental problem with Unix and Windows as seen
+in the previous chapter.
+
+To get all files in my homedir, this would work:
+
+#+begin_src lisp :results none
+  (directory (make-pathname :name :wild :type :wild :defaults "/home/alc/"))
+#+end_src
+
+However, this would not:
+
+#+begin_src lisp :results none
+  (directory (make-pathname :name :wild :type :wild :defaults "/home/alc"))
+#+end_src
+
+The path is in "file form", so we're taking everything from the "file"
+=alc= (in reality a directory) except its name (=alc=) and type
+(none), and adding a wild name and a wild type. So the result is
+=/home/*.*=.
+
+The "core" of the solution is to append to ~(:absolute "home")~ the
+name of the "file" (~alc~) to get the right directory component. Let's
+define a function to do this:
+
+#+begin_src lisp
+  (defun pathname-as-directory (name)
+    (let ((pathname (pathname name)))
+      (make-pathname
+       :directory (append (pathname-directory pathname)
+                          (list (file-namestring pathname)))
+       :name      nil
+       :type      nil
+       :defaults pathname)))
+
+  (pathname-as-directory "/home/alc")
+#+end_src
+
+#+RESULTS:
+: #P"/home/alc/"
+
+This works for an absolute directory, but what if I want to list the
+content of a relative directory in file form, such as =alc=? In that
+case we need to build a relative directory in dir form:
+
+#+begin_src lisp
+  (defun pathname-as-directory (name)
+    (let ((pathname (pathname name)))
+      (make-pathname
+       :directory (append (or (pathname-directory pathname) (list :relative))
+                          (list (file-namestring pathname)))
+       :name      nil
+       :type      nil
+       :defaults pathname)))
+
+  (pathname-as-directory "alc")
+#+end_src
+
+#+RESULTS:
+: #P"alc/"
+
+Of course this code shouldn't be executed for explicit directories,
+such as =/home/alc/= or =alc/=. It might not be a problem, because we
+will simply create a directory component with and empty element, but
+that's not elegant, and we never know. So we need a function to test
+if a pathname designator is in directory form or not:
+
+#+begin_src lisp :results none
+  (defun component-present-p (value)
+    (and value (not (eql value :unspecific))))
+
+  (defun directory-pathname-p  (p)
+    (and
+     (not (component-present-p (pathname-name p)))
+     (not (component-present-p (pathname-type p)))
+     p))
+#+end_src
+
+So our previous function becomes (with an additional check on wild
+pathnames):
+
+#+begin_src lisp
+  (defun pathname-as-directory (name)
+    (let ((pathname (pathname name)))
+      (when (wild-pathname-p pathname)
+        (error "Can't reliably convert wild pathnames."))
+      (if (not (directory-pathname-p name))
+          (make-pathname
+           :directory (append (or (pathname-directory pathname) (list :relative))
+                              (list (file-namestring pathname)))
+           :name      nil
+           :type      nil
+           :defaults pathname)
+          pathname)))
+
+  (pathname-as-directory "/home/alc/")
+#+end_src
+
+#+RESULTS:
+: #P"/home/alc/"
+
+Now we can list file in a directory without unexpected consequences
+(code is wrapped in ~length~ to avoid listing the content of my
+homedir 🙂):
+
+#+begin_src lisp
+  (length (directory (make-pathname
+                      :name :wild
+                      :type :wild
+                      :defaults (pathname-as-directory "/home/alc"))))
+#+end_src
+
+#+RESULTS:
+: 68
+
+Let's write a function to create a "directory with wildcard". While
+we're at it, we need to take into account CLISP's behavior:
+~directory~ won't return files with no extension unless the type
+component of the wildcard is ~nil~ rather than ~:wild~.
+
+#+begin_src lisp :results none
+  (defun directory-wildcard (dirname)
+    (make-pathname
+     :name :wild
+     :type #-clisp :wild #+clisp nil
+     :defaults (pathname-as-directory dirname)))
+#+end_src
+
+So the final code would be:
+
+#+begin_src lisp :results none
+  (defun list-directory (dirname)
+    (when (wild-pathname-p dirname)
+      (error "Can only list concrete directory names."))
+    (directory (directory-wildcard dirname)))
+#+end_src
+
+The final version is a bit different because:
+
+- Not all implementations will return subdirectories of the given
+  directory.
+
+- Allegro return directories in file form.
+
+Check the [[file:pcl15.lisp][code]] for the final result.
