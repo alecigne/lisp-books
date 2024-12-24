@@ -423,3 +423,295 @@ thing (a directory), but the pathname won't be the same.
 :PROPERTIES:
 :CREATED:  [2024-12-23 Mon 15:29]
 :END:
+
+** File Existence
+:PROPERTIES:
+:CREATED:  [2024-12-24 Tue 11:33]
+:END:
+
+- ~probe-file~ returns the file's truename (a resolved pathname) if
+  the file exists or ~nil~ if the file does not exist.
+
+- Limited support for testing directory existence (depending on the
+  implementation).
+
+#+begin_src lisp
+  (with-open-file (out "temp-file.txt" :direction :output :if-exists :supersede)
+    (write-line "I'm a temp file!" out))
+  (probe-file "temp-file.txt")
+#+end_src
+
+#+RESULTS:
+: #P"/home/alc/src/lisp-books/pcl/pcl14/temp-file.txt"
+
+** Listing Files
+:PROPERTIES:
+:CREATED:  [2024-12-24 Tue 11:34]
+:END:
+
+- The ~directory~ function lists files but suffers from implementation
+  differences.
+
+  #+begin_src lisp
+    (directory "/home/alc/")
+  #+end_src
+
+  #+RESULTS:
+  : (#P"/home/alc/")
+
+- A custom ~list-directory~ function can improve portability (to be
+  discussed in the next chapter).
+
+** File Deletion and Renaming
+:PROPERTIES:
+:CREATED:  [2024-12-24 Tue 11:37]
+:END:
+
+- ~delete-file~ deletes a file, signaling an error on failure:
+
+  #+begin_src lisp
+    (delete-file "temp-file.txt")
+  #+end_src
+
+  #+RESULTS:
+  : T
+
+- ~rename-file~ renames a file from a source to a destination
+  pathname:
+
+  #+begin_src lisp :results output
+    (let ((file "rename-me.txt") (newfile "renamed.txt"))
+      (with-open-file (out file :direction :output :if-exists nil))
+      (rename-file file newfile)
+      (when (probe-file newfile)
+        (format t "New file exists!")
+        (delete-file newfile)))
+  #+end_src
+
+  #+RESULTS:
+  : New file exists!
+
+** Directory Creation
+:PROPERTIES:
+:CREATED:  [2024-12-24 Tue 11:47]
+:END:
+
+- ~ensure-directories-exist~ tests whether the directories containing
+  the specified file actually exist, and attempts to create them if
+  they do not. It returns a pathname.
+
+  #+begin_src lisp
+    (with-open-file (out (ensure-directories-exist "dir1/dir2/file.txt")
+                         :direction :output)
+      (write-line "This is a test." out))
+  #+end_src
+
+  #+RESULTS:
+  : This is a test.
+
+** File Metadata
+:PROPERTIES:
+:CREATED:  [2024-12-24 Tue 11:57]
+:END:
+
+- ~file-write-date~ returns the last modification time (universal
+  time):
+
+  #+begin_src lisp :results output
+    (multiple-value-bind (second minute hour day month year)
+        (decode-universal-time (file-write-date "README.org"))
+      (format t "File modified on ~4,'0D-~2,'0D-~2,'0DT~2,'0D:~2,'0D:~2,'0D"
+              year month day hour minute second))
+
+  #+end_src
+
+  #+RESULTS:
+  : File modified on 2024-12-24T11:58:57
+
+- ~file-author~ returns the file owner (Unix and Windows):
+
+  #+begin_src lisp
+    (file-author "README.org")
+  #+end_src
+
+  #+RESULTS:
+  : alc
+
+** File Length
+:PROPERTIES:
+:CREATED:  [2024-12-24 Tue 12:34]
+:END:
+
+~file-length~ takes a stream as an argument, returning the file's
+length in bytes. To ensure predictable results, use a binary stream.
+
+#+begin_src lisp
+  (with-open-file (in "README.org" :element-type '(unsigned-byte 8))
+    (file-length in))
+#+end_src
+
+#+RESULTS:
+: 14033
+
+** File Position
+:PROPERTIES:
+:CREATED:  [2024-12-24 Tue 12:35]
+:END:
+
+~file-position~ returns the current position in the file:
+
+#+begin_src lisp
+  (with-open-file (in "README.org")
+    (file-position in))
+#+end_src
+
+#+RESULTS:
+: 0
+
+With two arguments, it sets the position in the file:
+
+#+begin_src lisp :results output
+  (with-open-file (in "README.org")
+    (flet ((format-line () (format t "~a~%" (read-line in nil))))
+      (file-position in :start)
+      (format-line)
+      (file-position in 200)
+      (format-line)
+      (file-position in :end)
+      (format-line)))
+#+end_src
+
+#+RESULTS:
+: #+title: PCL14 - Files and File I/O
+:  an input stream of characters from a
+: NIL
+
+* Other kinds of I/O
+:PROPERTIES:
+:CREATED:  [2024-12-24 Tue 17:10]
+:END:
+
+** Overview
+:PROPERTIES:
+:CREATED:  [2024-12-24 Tue 17:10]
+:END:
+
+Common Lisp supports various types of streams beyond file
+streams. These streams, including string streams, broadcast streams,
+concatenated streams, and bidirectional streams, can be used with
+standard I/O functions for flexible data manipulation and stream
+composition.
+
+** String Streams
+:PROPERTIES:
+:CREATED:  [2024-12-24 Tue 17:10]
+:END:
+
+~make-string-input-stream~ creates a stream for reading data from a string:
+
+#+begin_src lisp
+  (let ((s (make-string-input-stream "hello 1.23 hello" 6 9)))
+    (unwind-protect (read s)
+      (close s)))
+#+end_src
+
+#+RESULTS:
+: 1.2
+
+~make-string-output-stream~ creates a stream for writing data to a
+string. Accumulated string can be retrieved with
+~get-output-stream-string~, which clears the internal buffer.
+
+#+begin_src lisp
+  (let ((out (make-string-output-stream)))
+    (format out "Hello, world!")
+    (get-output-stream-string out))
+#+end_src
+
+#+RESULTS:
+: Hello, world!
+
+Macros for Convenience**:
+
+#+begin_src lisp
+  (with-input-from-string (s "hello 1.23 hello" :start 6 :end 9)
+    (read s))
+#+end_src
+
+#+RESULTS:
+: 1.2
+
+#+begin_src lisp
+  (with-output-to-string (out)
+    (format out "hello, world ")
+    (format out "~s" (list 1 2 3)))
+#+end_src
+
+#+RESULTS:
+: hello, world (1 2 3)
+
+** Specialized Streams
+:PROPERTIES:
+:CREATED:  [2024-12-24 Tue 17:10]
+:END:
+
+Broadcast streams send written data to multiple output streams.
+
+#+begin_src lisp :results verbatim
+  (let* ((out1 (make-string-output-stream))
+         (out2 (make-string-output-stream))
+         (broad (make-broadcast-stream out1 out2)))
+    (format broad "Hello, broadcast!")
+    (list (get-output-stream-string out1)
+          (get-output-stream-string out2)))
+#+end_src
+
+#+RESULTS:
+: ("Hello, broadcast!" "Hello, broadcast!")
+
+Concatenated streams read data sequentially from multiple input
+streams.
+
+#+begin_src lisp
+  (let* ((in1 (make-string-input-stream "Hello, "))
+         (in2 (make-string-input-stream "world!"))
+         (concat (make-concatenated-stream in1 in2)))
+    (read-line concat))
+#+end_src
+
+#+RESULTS:
+: Hello, world!
+
+Two-way streams combine an input stream and an output stream.
+
+#+begin_src lisp
+  (let* ((in (make-string-input-stream "Input data"))
+         (out (make-string-output-stream))
+         (two-way (make-two-way-stream in out)))
+    (read-line two-way))
+#+end_src
+
+#+RESULTS:
+: Input data
+
+Echo streams are like two-ways streams, but they echo input data to
+the output stream.
+
+** Networking Streams
+:PROPERTIES:
+:CREATED:  [2024-12-24 Tue 17:10]
+:END:
+
+- Many Common Lisp implementations provide networking APIs, typically
+  treating sockets as streams.
+
+- This allows use of standard I/O functions for socket programming,
+  though specifics vary by implementation.
+
+** Stream Composition
+:PROPERTIES:
+:CREATED:  [2024-12-24 Tue 17:10]
+:END:
+
+- Common Lisp streams support flexible configurations for complex data
+  flow, enabling custom "stream plumbing."

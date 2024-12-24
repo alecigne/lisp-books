@@ -12,3 +12,5 @@ Some of this code might depends on [[https://github.com/alecigne/cl-utils][cl-ut
 Common Lisp utilities. Some projects might also depend from other
 chapters. For example, [[file:agitsc/agitsc14/][agitsc14]] depends on the unit test framework
 developed from scratch in [[file:pcl/pcl9/][pcl9]] 🙂
+
+Please note that [[https://orgmode.org/manual/Working-with-Source-Code.html][Org babel results]] are not displayed by GitHub.
