@@ -1,0 +1,3 @@
+#+title: Practical Common Lisp
+
+[[file:../.data/pcl.jpg]]
