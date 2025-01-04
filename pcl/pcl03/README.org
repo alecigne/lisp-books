@@ -12,7 +12,11 @@
         (print list)))
   #+end_src
 
-- [[https://github.com/alecigne/lisp-books/commit/77eee71b862492a38fe4c16441058eae9edb7a75][77eee71]] :: Making ~where~ a macro.
+- [[https://github.com/alecigne/lisp-books/commit/77eee71b862492a38fe4c16441058eae9edb7a75][77eee71]] :: Making ~where~ a macro. In [[file:pcl3-nomac.lisp][pcl3-nomac.lisp]], you can see
+  two generalized versions of ~where~ (not bound to a "CD" database
+  but to a "plist" database) without using a macro, that appear to
+  work correctly 🙂 The arguments to ~where-loop~ and ~where-recur~
+  must be coherent.
 
 - [[https://github.com/alecigne/lisp-books/commit/6f6743b544b5cd3cfd175fc8b2dcf58b54092db4][6f6743b]] :: Making ~update~ a macro. Note that this final solution is
   not the one from the book. The result might be questionable. Browse
